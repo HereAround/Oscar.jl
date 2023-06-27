@@ -61,6 +61,100 @@ end
 ## Star subdivision
 ###############################################################################
 
+
+@doc raw"""
+    star_subdivision(PF::PolyhedralFan, new_ray::Vector{Int64})
+
+Return the star subdivision of a polyhedral fan by a primitive element of
+the underlying lattice. We follow the definition at the top of page 515 in
+[CLS11](@cite).
+
+# Examples
+```jldoctest
+julia> fan = normal_fan(simplex(3))
+Polyhedral fan in ambient dimension 3
+
+julia> rays(fan)
+4-element SubObjectIterator{RayVector{QQFieldElem}}:
+ [1, 0, 0]
+ [0, 1, 0]
+ [0, 0, 1]
+ [-1, -1, -1]
+
+julia> ray_indices(maximal_cones(fan))
+4×4 IncidenceMatrix
+[1, 2, 3]
+[2, 3, 4]
+[1, 3, 4]
+[1, 2, 4]
+
+julia> new_ray = [1, 1, 1]
+3-element Vector{Int64}:
+ 1
+ 1
+ 1
+
+julia> star = star_subdivision(fan, new_ray)
+Polyhedral fan in ambient dimension 3
+
+julia> rays(star)
+5-element SubObjectIterator{RayVector{QQFieldElem}}:
+ [1, 0, 0]
+ [0, 1, 0]
+ [0, 0, 1]
+ [-1, -1, -1]
+ [1, 1, 1]
+
+julia> ray_indices(maximal_cones(star))
+6×5 IncidenceMatrix
+[2, 3, 4]
+[1, 3, 4]
+[1, 2, 4]
+[2, 3, 5]
+[1, 3, 5]
+[1, 2, 5]
+
+```
+"""
+function star_subdivision(Sigma::_FanLikeType{T}, new_ray::Vector{Int64}) where T<:scalar_types
+  
+  # Check if new_ray is primitive.
+  # Note that new_ray is primitive iff v/n is a lattice point in Z^d (d = length(new_ray)) iff n = 1 or n == -1.
+  # For our application, the lattice in question is always Z^d for a suitable integer d.
+  # -> We check if gcd(all entries of new_ray) is 1.
+  @req ambient_dim(Sigma) == length(new_ray) "New ray cannot be a primitive element"
+  @req gcd(new_ray) == 1 "The new ray r is not a primitive element of the lattice Z^d with d = length(r)"
+  
+  # Construct the new rays
+  old_rays = matrix(ZZ,rays(Sigma))
+  converted_new_ray = matrix([[ZZ(k) for k in new_ray]])
+  new_rays = vcat(old_rays, converted_new_ray)
+  
+  # Construct list of all old maximal cones that do not contain new_ray
+  new_max_cones = filter(c -> !(new_ray in c), maximal_cones(Sigma))
+  ray_indices_new_max_cones = [[vec([Int(k) for k in new_rays[index,:]]) in c for index in 1:nrows(new_rays)] for c in new_max_cones]
+  
+  # Complete this list of maximal cones by dealing with all maximal cones that contain new_ray
+  max_cones_with_new_ray = filter(c -> new_ray in c, maximal_cones(Sigma))
+  for i in 1:length(max_cones_with_new_ray)
+    rc = matrix(ZZ, rays(max_cones_with_new_ray[i]))
+    for j in 1:length(rc)
+      rays_of_face = vcat([rc[l,:] for l in filter(k -> k != j, 1:nrows(rc))])
+      if (new_ray in positive_hull(rays_of_face)) == false
+        rays_of_new_cone = vcat([rays_of_face[k,:] for k in 1:nrows(rays_of_face)], converted_new_ray)
+        ray_indices_of_new_cone = [new_rays[k,:] in rays_of_new_cone for k in 1:nrows(new_rays)]
+        push!(ray_indices_new_max_cones, ray_indices_of_new_cone)
+      end
+    end
+  end
+  
+  # Construct the new fan
+  new_max_cones = IncidenceMatrix([findall(k -> k == true, ray_indices_new_max_cones[i]) for i in 1:length(ray_indices_new_max_cones)])
+  return polyhedral_fan(T, new_rays, new_max_cones; non_redundant=true)
+  
+end
+
+
 @doc raw"""
     star_subdivision(PF::PolyhedralFan, n::Int)
 

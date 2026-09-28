@@ -75,6 +75,7 @@ include("CohomologyClasses/methods.jl")
 include("Subvarieties/constructors.jl")
 include("Subvarieties/properties.jl")
 include("Subvarieties/attributes.jl")
+include("Subvarieties/complete_intersections.jl")
 
 include("AlgebraicCycles/constructors.jl")
 include("AlgebraicCycles/properties.jl")

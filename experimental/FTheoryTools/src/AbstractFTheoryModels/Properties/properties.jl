@@ -81,8 +81,10 @@ julia> verify_euler_characteristic_from_hodge_numbers(qsm_model; completeness_ch
 true
 ```
 """
-@attr Bool function verify_euler_characteristic_from_hodge_numbers(
-  m::AbstractFTheoryModel; completeness_check::Bool=true
+function verify_euler_characteristic_from_hodge_numbers(
+  m::AbstractFTheoryModel;
+  algorithm::Symbol=:intersection_theory, completeness_check::Bool=true,
+  check_smoothness::Bool=false, check_codimension::Bool=false,
 )
   @req (m isa WeierstrassModel || m isa GlobalTateModel || m isa HypersurfaceModel) "Verification of Euler characteristic of F-theory model supported for Weierstrass, global Tate and hypersurface models only"
   @req base_space(m) isa NormalToricVariety "Verification of Euler characteristic of F-theory model currently supported only for toric base"
@@ -95,7 +97,7 @@ true
   @req has_attribute(m, :hodge_h22) "Verification of Euler characteristic of F-theory model requires hodge_h22"
 
   # Computer Euler characteristic from integrating c4
-  ec = euler_characteristic(m; completeness_check)
+  ec = euler_characteristic(m; algorithm, completeness_check, check_smoothness, check_codimension)
 
   # Compute Euler characteristic from adding Hodge numbers
   ec2 = 4 + 2 * hodge_h11(m) - 4 * hodge_h12(m) + 2 * hodge_h13(m) + hodge_h22(m)

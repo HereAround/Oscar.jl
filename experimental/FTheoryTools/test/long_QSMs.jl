@@ -3,15 +3,26 @@
 #############################################################
 
 using Random
+using LazyArtifacts
 our_rng = Random.Xoshiro(1234)
 
+# Check all QSM representatives against their stored Hodge data, assuming smoothness,
+# completeness, and expected codimension, and verify their intersection theory and fluxes.
 @testset "Advanced intersection theory and QSM-fluxes" begin
-  for k in 1:5000
-    qsm_model = try
-      literature_model(; arxiv_id="1903.00009", model_parameters=Dict("k" => k), rng=our_rng)
-    catch e
-      continue
-    end
+  files = filter(name -> occursin(r"^\d+\.mrdi$", name), readdir(artifact"QSMDB"))
+  indices = sort!([parse(Int, first(splitext(name))) for name in files])
+  @test length(indices) == length(unique(indices)) == 708
+  @testset "QSM k=$k" for k in indices
+    Oscar.reset_global_serializer_state()
+    qsm_model = literature_model(;
+      arxiv_id="1903.00009", model_parameters=Dict("k" => k), rng=Random.Xoshiro(k)
+    )
+    h11, h12, h13, h22 = [
+      ZZ(get_attribute(qsm_model, s)) for s in (:hodge_h11, :hodge_h12, :hodge_h13, :hodge_h22)
+    ]
+    @test euler_characteristic(
+      toric_hypersurface(qsm_model; check_codimension=false); algorithm=:intersection_theory, completeness_check=false
+    ) == 4 + 2*h11 - 4*h12 + 2*h13 + h22
     h22_converter_dict = converter_dict_h22_ambient(qsm_model; completeness_check=false)
     coh_ring = cohomology_ring(ambient_space(qsm_model); completeness_check=false)
     coh_ring_gens = gens(coh_ring)

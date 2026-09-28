@@ -170,54 +170,39 @@ rational_equivalence_class(cc::CohomologyClass) = RationalEquivalenceClass(
 )
 
 @doc raw"""
-    rational_equivalence_class(sv::ClosedSubvarietyOfToricVariety)
+    rational_equivalence_class(Y::AbsToricCompleteIntersection;
+                               check_codimension=true)
 
-Construct the rational equivalence class of algebraic
-cycles of a closed subvariety of a normal toric variety.
+Construct the toric Chow class of the chosen complete-intersection
+presentation of `Y` by multiplying the classes of its defining Cartier
+divisors. The ambient toric variety must be complete and simplicial. By
+default, the expected-codimension/Cartier check is performed; set
+`check_codimension=false` only when those complete-intersection hypotheses
+are being supplied as an explicit assumption.
 
-# Examples
-```jldoctest
-julia> ntv = normal_toric_variety(Oscar.normal_fan(Oscar.cube(2)))
-Normal toric variety
-
-julia> set_coordinate_names(ntv, ["x1", "x2", "y1", "y2"]);
-
-julia> (x1, x2, y1, y2) = gens(cox_ring(ntv))
-4-element Vector{MPolyDecRingElem{QQFieldElem, QQMPolyRingElem}}:
- x1
- x2
- y1
- y2
-
-julia> sv = closed_subvariety_of_toric_variety(ntv, [x1^2+x1*x2+x2^2, y2])
-Closed subvariety of a normal toric variety
-
-julia> rational_equivalence_class(sv)
-Rational equivalence class on a normal toric variety represented by 2V(x2,y2)
-```
+This method is intentionally not defined for an arbitrary
+`ClosedSubschemeOfToricVariety`. Its stored Cox ideal is presentation data,
+and OSCAR currently has no general conversion from an intrinsic
+scheme-theoretic cycle of an arbitrary covered scheme to a toric
+`RationalEquivalenceClass`.
 """
-function rational_equivalence_class(sv::ClosedSubvarietyOfToricVariety)
-  v = toric_variety(sv)
-  indets = gens(chow_ring(v))
-  mons = [[m for m in monomials(p)][1] for p in gens(defining_ideal(sv))]
-  expos = [
-    matrix(ZZ, [k for k in AbstractAlgebra.exponent_vectors(mons[k])]) for
-    k in 1:length(mons)
-  ]
-  coeffs = [1 for i in 1:length(mons)]
-  new_mons = MPolyQuoRingElem{QQMPolyRingElem}[]
-  for k in 1:length(mons)
-    mon = 1
-    for j in 1:ncols(expos[k])
-      if expos[k][1, j] != 0
-        coeffs[k] = coeffs[k] * expos[k][1, j]
-        mon = mon * indets[j]
-      end
+function rational_equivalence_class(
+  Y::AbsToricCompleteIntersection; check_codimension::Bool=true,
+)
+  X = toric_variety(Y)
+  @req is_simplicial(X) && is_complete(X) "Currently, algebraic cycles are only supported for complete simplicial toric varieties"
+  if check_codimension
+    _check_toric_presentation(Y; check_codimension=true)
+  else
+    for Z in (Y, _toric_presentation(Y))
+      @req !has_attribute(Z, :has_expected_codimension) || get_attribute(Z, :has_expected_codimension) "The equations are known not to have the expected codimension"
     end
-    push!(new_mons, mon)
   end
-  classes = [coeffs[k] * RationalEquivalenceClass(v, new_mons[k]) for k in 1:length(mons)]
-  return prod(classes)
+  result = RationalEquivalenceClass(X, one(chow_ring(X)))
+  for D in defining_divisor_classes(Y)
+    result = result * rational_equivalence_class(D)
+  end
+  return result
 end
 
 ####################################################
@@ -259,19 +244,19 @@ Base.:^(ac::RationalEquivalenceClass, p::T) where {T<:IntegerUnion} =
     toric_variety(ac), polynomial(ac)^p
   )
 
-function Base.:*(ac::RationalEquivalenceClass, sv::ClosedSubvarietyOfToricVariety)
-  @req toric_variety(ac) === toric_variety(sv) "The rational equivalence class and the closed subvariety must be defined on the same toric variety"
-  return ac * rational_equivalence_class(sv)
+function Base.:*(ac::RationalEquivalenceClass, Y::AbsToricCompleteIntersection)
+  @req toric_variety(ac) === toric_variety(Y) "The rational equivalence class and the complete intersection must be defined on the same toric variety"
+  return ac * rational_equivalence_class(Y)
 end
 
-function Base.:*(sv::ClosedSubvarietyOfToricVariety, ac::RationalEquivalenceClass)
-  @req toric_variety(ac) === toric_variety(sv) "The rational equivalence class and the closed subvariety must be defined on the same toric variety"
-  return ac * rational_equivalence_class(sv)
+function Base.:*(Y::AbsToricCompleteIntersection, ac::RationalEquivalenceClass)
+  @req toric_variety(ac) === toric_variety(Y) "The rational equivalence class and the complete intersection must be defined on the same toric variety"
+  return ac * rational_equivalence_class(Y)
 end
 
-function Base.:*(sv1::ClosedSubvarietyOfToricVariety, sv2::ClosedSubvarietyOfToricVariety)
-  @req toric_variety(sv1) === toric_variety(sv2) "The closed subvarieties must be defined on the same toric variety"
-  return rational_equivalence_class(sv1) * rational_equivalence_class(sv2)
+function Base.:*(Y1::AbsToricCompleteIntersection, Y2::AbsToricCompleteIntersection)
+  @req toric_variety(Y1) === toric_variety(Y2) "The complete intersections must be defined on the same toric variety"
+  return rational_equivalence_class(Y1) * rational_equivalence_class(Y2)
 end
 
 ####################################################

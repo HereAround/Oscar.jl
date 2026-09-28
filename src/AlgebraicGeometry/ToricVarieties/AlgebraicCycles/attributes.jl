@@ -213,18 +213,18 @@ julia> length(components(ac*ac))
 1
 ```
 """
-@attr Vector{ClosedSubvarietyOfToricVariety} function components(
+@attr Vector{ClosedSubschemeOfToricVariety} function components(
   ac::RationalEquivalenceClass
 )
   if is_trivial(ac)
-    return ClosedSubvarietyOfToricVariety[]
+    return ClosedSubschemeOfToricVariety[]
   end
   variety = toric_variety(ac)
   gs = gens(cox_ring(toric_variety(ac)))
   mons = [m for m in monomials(representative(ac))]
   expos = [[e for e in AbstractAlgebra.exponent_vectors(m)][1] for m in mons]
   return [
-    closed_subvariety_of_toric_variety(variety, [gs[k] for k in findall(!iszero, exps)])
+    closed_subscheme_of_toric_variety(variety, [gs[k] for k in findall(!iszero, exps)])
     for
     exps in expos
   ]

@@ -237,3 +237,60 @@ h5 = literature_model(; arxiv_id="1208.2695", equation="B.5", rng=our_rng)
   @test is_base_space_fully_specified(h5) == false
   @test is_partially_resolved(h5) == false
 end
+
+# Test adapters and dimension-general Euler calculations without changing model representations.
+@testset "Toric intersection adapters" begin
+  B = projective_space(NormalToricVariety, 1)
+  set_coordinate_names(B, ["b1", "b2"])
+  F = projective_space(NormalToricVariety, 1)
+  set_coordinate_names(F, ["u", "v"])
+  twists = [trivial_divisor_class(B), trivial_divisor_class(B)]
+  m = hypersurface_model(B, F, twists, "b1^2*u^2 + b1^2*v^2 + b2^2*u^2 + 2*b2^2*v^2")
+  c = calabi_yau_hypersurface(m)
+  @test c isa ClosedSubschemeOfToricVariety
+  Y = toric_hypersurface(m)
+  @test Y isa ToricHypersurface
+  @test closed_subscheme_of_toric_variety(Y) === c
+  @test defining_equation(Y) == hypersurface_equation(m)
+  @test !has_attribute(Y, :is_smooth)
+  @test euler_characteristic(m; check_smoothness=true, check_codimension=true) === 0
+  @test is_smooth(c)
+  @test iszero(polynomial(chern_class(m, 1)))
+  @test chern_class(m, 0) == chern_class(Y, 0)
+  @test chern_classes(m)[1] == chern_class(Y, 1)
+  set_attribute!(m, :euler_characteristic, -999)
+  @test euler_characteristic(m; completeness_check=false) === 0
+  @test get_attribute(m, :euler_characteristic) === 0
+  @test_throws ArgumentError euler_characteristic(m; algorithm=:unknown)
+
+  F2 = projective_space(NormalToricVariety, 2)
+  set_coordinate_names(F2, ["u", "v", "w"])
+  k3 = hypersurface_model(B, F2, fill(trivial_divisor_class(B), 3), "b1^2*u^3 + b2^2*v^3 + (b1^2+b2^2)*w^3")
+  @test euler_characteristic(k3) === 24
+  @test !has_attribute(calabi_yau_hypersurface(k3), :is_smooth)
+  bad = hypersurface_model(B, F, twists, "b1^2*u^2")
+  @test euler_characteristic(bad) === 0
+  chern_class(bad, 1)
+  @test_throws ArgumentError euler_characteristic(bad; check_smoothness=true)
+  @test_throws ArgumentError chern_class(bad, 1; check_smoothness=true)
+  @test_throws ArgumentError euler_characteristic(bad)
+
+  A = ambient_space(k3)
+  a = gens(cox_ring(A))
+  equations = [a[end - 1], a[end]]
+  ci = CompleteIntersectionModel(B, A, ideal(equations))
+  @test defining_ideal(ci) == ideal(equations)
+  T = toric_complete_intersection(ci, equations; check_smoothness=true, check_codimension=true)
+  @test T isa ToricCompleteIntersection
+  @test defining_equations(T) == equations
+  @test euler_characteristic(ci, equations; check_smoothness=true, check_codimension=true) === 2
+  @test_throws ArgumentError toric_complete_intersection(ci, [a[1]])
+  @test_throws ArgumentError euler_characteristic(ci)
+
+  singular_ambient_model = weierstrass_model_over_projective_space(1; rng=Random.Xoshiro(1234))
+  @test calabi_yau_hypersurface(singular_ambient_model) isa ClosedSubschemeOfToricVariety
+  @test toric_hypersurface(singular_ambient_model) isa ToricHypersurface
+  @test_throws ArgumentError euler_characteristic(singular_ambient_model; completeness_check=false)
+  abstract_model = literature_model(; arxiv_id="1109.3454", equation="3.1", rng=Random.Xoshiro(1234))
+  @test_throws ArgumentError toric_hypersurface(abstract_model)
+end

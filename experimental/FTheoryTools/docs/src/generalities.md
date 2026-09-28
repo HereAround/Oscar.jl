@@ -38,6 +38,19 @@ a [Families of Spaces](@ref family_of_spaces):
 is_base_space_fully_specified(m::AbstractFTheoryModel)
 ```
 
+Concrete toric models can be adapted to the generic toric hypersurface and
+complete-intersection interfaces. The hypersurface adapter retains the closed
+subscheme returned by `calabi_yau_hypersurface(m)`. A complete-intersection
+model requires an explicit choice of defining equations generating its stored
+ideal. Adapters check expected codimension and Cartier defining classes by
+default; use `check_codimension=false` to assume these conditions. Smoothness
+is checked only with `check_smoothness=true`.
+
+```@docs
+toric_hypersurface(::AbstractFTheoryModel)
+toric_complete_intersection(::CompleteIntersectionModel, ::AbstractVector)
+```
+
 ---
 
 ## Chern Classes and Euler Characteristic
@@ -56,10 +69,14 @@ These classes allow for a consistency check on the Calabi–Yau condition:
 is_calabi_yau(m::AbstractFTheoryModel)
 ```
 
-The Euler characteristic is obtained by integrating the top Chern class:
+The Euler characteristic is computed by the generic toric intersection-theory
+engine. It assumes a smooth complete intersection of the expected codimension
+in a smooth, complete toric ambient variety. The model methods retain their
+`Int` return type.
 
 ```@docs
 euler_characteristic(m::AbstractFTheoryModel)
+euler_characteristic(::CompleteIntersectionModel, ::AbstractVector)
 ```
 
 ---

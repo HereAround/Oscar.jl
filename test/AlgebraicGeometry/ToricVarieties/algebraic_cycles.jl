@@ -2,12 +2,13 @@
   antv = affine_normal_toric_variety(Oscar.positive_hull([1 1; -1 1]))
 
   P3 = projective_space(NormalToricVariety, 3)
-  sv0 = closed_subvariety_of_toric_variety(P3, [gens(cox_ring(P3))[1]^2])
+  w = gens(cox_ring(P3))
+  h0 = toric_hypersurface(P3, w[1]^2)
 
   ntv = normal_toric_variety(Oscar.normal_fan(Oscar.cube(2)))
   (xx1, xx2, yy1, yy2) = gens(cox_ring(ntv))
-  sv1 = closed_subvariety_of_toric_variety(ntv, [xx1])
-  sv2 = closed_subvariety_of_toric_variety(ntv, [xx1^2 + xx1 * xx2 + xx2^2, yy2])
+  sv1 = closed_subscheme_of_toric_variety(ntv, [xx1])
+  h1 = toric_hypersurface(ntv, xx1)
   ac0 = rational_equivalence_class(toric_line_bundle(ntv, [1, 1]))
 
   F5 = hirzebruch_surface(NormalToricVariety, 5)
@@ -28,9 +29,9 @@
     @test_throws ArgumentError ac1 + ac3
     @test_throws ArgumentError ac1 - ac3
     @test_throws ArgumentError ac1 * ac3
-    @test_throws ArgumentError sv1 * ac1
-    @test_throws ArgumentError ac4 * sv1
-    @test_throws ArgumentError sv1 * sv0
+    @test_throws ArgumentError h1 * ac1
+    @test_throws ArgumentError ac4 * h1
+    @test_throws MethodError sv1 * h0
   end
 
   @testset "Arithmetic" begin
@@ -44,14 +45,14 @@
     @test polynomial(ac1) == 0
     @test parent(representative(ac1)) == cox_ring(toric_variety(ac1))
     @test is_trivial(cohomology_class(3 * ac2)) == false
-    @test is_trivial(rational_equivalence_class(sv2)) == false
+    @test is_trivial(rational_equivalence_class(h1)) == false
     @test length(coefficients(ac1)) == 0
     @test length(components(ac4 - ac3)) == 4
-    @test is_trivial(ac0 * sv1) == false
-    @test is_trivial(sv1 * ac0) == false
-    @test is_trivial(sv1 * sv1) == true
-    @test length(components(sv0 * sv0)) == 1
-    @test coefficients(sv0 * sv0)[1] == 4
+    @test is_trivial(ac0 * h1) == false
+    @test is_trivial(h1 * ac0) == false
+    @test is_trivial(h1 * h1) == true
+    @test length(components(h0 * h0)) == 1
+    @test coefficients(h0 * h0)[1] == 4
   end
 
   @testset "Intersections" begin

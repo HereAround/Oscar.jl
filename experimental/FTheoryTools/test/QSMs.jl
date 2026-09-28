@@ -116,3 +116,31 @@ end
   )
   @test cohomology_class(empty_coeff_flux) == cohomology_class(zero_matrix_flux)
 end
+
+# Compare intersection theory with independent legacy Hodge attributes of the local k=4 QSM.
+# The guard prevents downloads when this testset is selected in isolation.
+# Running this entire file already requires QSMDB in the setup above.
+@testset "QSM k=4 Euler comparison" begin
+  qsm_hash = Oscar.artifact_hash("QSMDB", joinpath(Oscar.oscardir, "Artifacts.toml"))
+  if isnothing(qsm_hash) || !Oscar.artifact_exists(qsm_hash)
+    @info "Skipping k=4 Euler testset: QSMDB is not installed locally"
+    @test_skip false
+  else
+    m = literature_model(; arxiv_id="1903.00009", model_parameters=Dict("k" => 4), rng=Random.Xoshiro(1234))
+    hs = [get_attribute(m, s) for s in (:hodge_h11, :hodge_h12, :hodge_h13, :hodge_h22)]
+    @test hs == [31, 10, 34, 284]
+    h11, h12, h13, h22 = hs
+    expected = 4 + 2*h11 - 4*h12 + 2*h13 + h22
+    @test expected == 378
+    Y = toric_hypersurface(m; check_codimension=false)
+    @test !has_attribute(Y, :is_smooth)
+    @test euler_characteristic(Y; completeness_check=false) == expected
+    @test euler_characteristic(m; completeness_check=false) == expected
+    D = cohomology_class(only(defining_divisor_classes(Y)); completeness_check=false)
+    @test integrate(chern_class(m, 4; completeness_check=false) * D; completeness_check=false) == expected
+    @test verify_euler_characteristic_from_hodge_numbers(m; completeness_check=false)
+    @test_throws ArgumentError verify_euler_characteristic_from_hodge_numbers(m; completeness_check=false, algorithm=:unknown)
+    @test !has_attribute(Y, :is_smooth)
+    @test !has_attribute(calabi_yau_hypersurface(m), :is_smooth)
+  end
+end

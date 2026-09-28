@@ -68,7 +68,7 @@ rational_equivalence_class(d::ToricDivisor)
 rational_equivalence_class(c::ToricDivisorClass)
 rational_equivalence_class(l::ToricLineBundle)
 rational_equivalence_class(cc::CohomologyClass)
-rational_equivalence_class(sv::ClosedSubvarietyOfToricVariety)
+rational_equivalence_class(::AbsToricCompleteIntersection)
 ```
 
 ### Addition, subtraction and scalar multiplication
@@ -94,10 +94,15 @@ corresponds to the product of two (equivalence classes of) polynomials.
 An algebraic cycle can be intersected `n`- with itself via `^n`,
 where `n` can be an integer of of type `ZZRingElem`.
 
-A closed subvarieties defines in a natural way a rational equivalence
-class (cf. [Special constructors](@ref toric_special_constructors)). This allows to
-compute intersection products among closed subvarieties and rational
-equivalence classes in the Chow ring.
+For a chosen toric hypersurface or complete-intersection presentation, the
+divisor classes of its defining equations determine a rational equivalence
+class (cf. [Special constructors](@ref toric_special_constructors)). This
+construction is restricted to the `AbsToricCompleteIntersection` interface:
+the stored Cox ideal of an arbitrary `ClosedSubschemeOfToricVariety` is only a
+presentation, and there is currently no general conversion of its intrinsic
+scheme-theoretic cycle to the toric Chow ring. For an equidimensional ideal
+sheaf, use `algebraic_cycle(ideal_sheaf(...))` for the existing OSCAR
+covered-scheme cycle instead.
 
 
 ## Attributes

@@ -229,6 +229,9 @@ Base.@deprecate_binding MatrixGroup MatGroup
 Base.@deprecate_binding MatrixGroupElem MatGroupElem
 
 # deprecated for 1.9
+Base.@deprecate_binding ClosedSubvarietyOfToricVariety ClosedSubschemeOfToricVariety
+@deprecate closed_subvariety_of_toric_variety closed_subscheme_of_toric_variety
+
 @deprecate all_cohomologies(l::ToricLineBundle; algorithm::String="cohomCalg") sheaf_cohomology(l)
 @deprecate cohomology(l::ToricLineBundle, i::Int; algorithm::String="cohomCalg") sheaf_cohomology(l, i)
 

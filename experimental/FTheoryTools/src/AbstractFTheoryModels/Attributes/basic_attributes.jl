@@ -85,7 +85,7 @@ end
     calabi_yau_hypersurface(m::AbstractFTheoryModel)
 
 Return the Calabi–Yau hypersurface that defines the hypersurface model
-as a closed subvariety of its toric ambient space.
+as a closed subscheme of its toric ambient space.
 
 # Examples
 ```jldoctest
@@ -95,13 +95,13 @@ julia> w =  weierstrass_model_over_projective_space(3, rng = Random.Xoshiro(1234
 Weierstrass model over a concrete base
 
 julia> calabi_yau_hypersurface(w)
-Closed subvariety of a normal toric variety
+Closed subscheme of a normal toric variety
 
 julia> t = global_tate_model_over_projective_space(2, rng = Random.Xoshiro(1234))
 Global Tate model over a concrete base
 
 julia> calabi_yau_hypersurface(t)
-Closed subvariety of a normal toric variety
+Closed subscheme of a normal toric variety
 
 julia> b = projective_space(NormalToricVariety, 2);
 
@@ -117,17 +117,66 @@ julia> h = hypersurface_model(b, fiber_ambient, [2 * kb, 3 * kb], p; completenes
 Hypersurface model over a concrete base
 
 julia> calabi_yau_hypersurface(h)
-Closed subvariety of a normal toric variety
+Closed subscheme of a normal toric variety
 ```
 """
-@attr ClosedSubvarietyOfToricVariety function calabi_yau_hypersurface(
+@attr ClosedSubschemeOfToricVariety function calabi_yau_hypersurface(
   m::AbstractFTheoryModel
 )
   @req (m isa HypersurfaceModel || m isa WeierstrassModel || m isa GlobalTateModel) "Calabi-Yau hypersurface currently not supported for this model"
   @req base_space(m) isa NormalToricVariety "Calabi-Yau hypersurface currently only supported for toric varieties as base space"
   is_base_space_fully_specified(m) ||
     @vprint :FTheoryModelPrinter 1 "Base space was not fully specified. Returning hypersurface in AUXILIARY ambient space.\n"
-  return closed_subvariety_of_toric_variety(ambient_space(m), [hypersurface_equation(m)])
+  return closed_subscheme_of_toric_variety(ambient_space(m), [hypersurface_equation(m)])
+end
+
+@doc raw"""
+    toric_hypersurface(m::AbstractFTheoryModel;
+                      check_smoothness=false, check_codimension=true)
+
+Adapt a concrete toric hypersurface, Weierstrass, or global Tate model to a
+`ToricHypersurface`, retaining its actual equation. The underlying closed
+subscheme is `calabi_yau_hypersurface(m)`. Expected codimension and Cartier
+classes are checked by default; smoothness remains unknown unless requested.
+Set `check_codimension=false` to assume the complete-intersection conditions.
+Models over auxiliary families or nontoric ambient spaces are unsupported.
+"""
+function toric_hypersurface(
+  m::AbstractFTheoryModel;
+  check_smoothness::Bool=false, check_codimension::Bool=true,
+)
+  @req m isa Union{HypersurfaceModel,WeierstrassModel,GlobalTateModel} "A hypersurface model is required; for a CompleteIntersectionModel supply its chosen equations to toric_complete_intersection"
+  @req base_space(m) isa NormalToricVariety "The model must have a concrete toric base"
+  @req ambient_space(m) isa NormalToricVariety "The model must have a concrete toric ambient space"
+  return toric_hypersurface(calabi_yau_hypersurface(m), hypersurface_equation(m); check_smoothness, check_codimension)
+end
+
+@doc raw"""
+    defining_ideal(m::CompleteIntersectionModel)
+
+Return the stored ideal of a complete-intersection model. Its generators are
+not assumed to be a chosen regular sequence.
+"""
+defining_ideal(m::CompleteIntersectionModel) = m.defining_ideal
+
+@doc raw"""
+    toric_complete_intersection(m::CompleteIntersectionModel, equations::AbstractVector;
+                               check_smoothness=false, check_codimension=true)
+
+Adapt a concrete toric model using an explicitly supplied equation list that
+generates its stored ideal. The model stores only an ideal, so a chosen
+complete-intersection presentation cannot be recovered automatically.
+The smoothness and codimension options are independent, as for the generic
+toric constructor. This adapter does not change the model or its serialization.
+"""
+function toric_complete_intersection(
+  m::CompleteIntersectionModel, equations::AbstractVector;
+  check_smoothness::Bool=false, check_codimension::Bool=true,
+)
+  @req base_space(m) isa NormalToricVariety "The model must have a concrete toric base"
+  @req ambient_space(m) isa NormalToricVariety "The model must have a concrete toric ambient space"
+  c = closed_subscheme_of_toric_variety(ambient_space(m), defining_ideal(m))
+  return toric_complete_intersection(c, equations; check_smoothness, check_codimension)
 end
 
 ######################################################################################

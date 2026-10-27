@@ -33,6 +33,7 @@ export AbsProjectiveScheme
 export AbsProjectiveSchemeMorphism
 export AbsProjectiveVariety
 export AbsRationalMap
+export AbsToricCompleteIntersection
 export AbstractAlgebra
 export AffineAlgebraicSet
 export AffineHalfspace
@@ -201,8 +202,10 @@ export SubQuoHom
 export SubdivisionOfPoints, subdivision_of_points
 export SubquoModule
 export SubquoModuleElem
+export ToricCompleteIntersection
 export ToricDivisor
 export ToricDivisorClass
+export ToricHypersurface
 export ToricLineBundle
 export ToricMorphism
 export ToricVanishingSet
@@ -534,7 +537,9 @@ export default_covering
 export default_ordering
 export defect_group
 export defines_automorphism
+export defining_divisor_classes
 export defining_equation
+export defining_equations
 export defining_ideal
 export deginvlex
 export deglex
@@ -765,6 +770,7 @@ export hall_subgroup_classes
 export hall_subgroups
 export hall_system, has_hall_system, set_hall_system
 export has_edge
+export has_expected_codimension
 export has_groups_with_class_number
 export has_groups_with_class_number_identification
 export has_nonempty_intersection
@@ -1815,8 +1821,10 @@ export tetrahedron
 export tighten_simulation
 export to_elementary_symmetric
 export tor
+export toric_complete_intersection
 export toric_divisor
 export toric_divisor_class
+export toric_hypersurface
 export toric_ideal
 export toric_identity_morphism
 export toric_line_bundle

@@ -1,3 +1,4 @@
+# Local ideals of toric Cox-ring ideal sheaves.
 
 function produce_object_on_affine_chart(II::ToricIdealSheafFromCoxRingIdeal, U::AbsAffineScheme)
   X = scheme(II)

@@ -9,8 +9,6 @@ include("critical_locus.jl")
 
 include("ToricIdealSheaves/auxiliary.jl")
 include("ToricIdealSheaves/constructors.jl")
-include("ToricIdealSheaves/attributes.jl")
-include("ToricIdealSheaves/methods.jl")
 
 include("ToricDivisors/constructors.jl")
 include("ToricDivisors/attributes.jl")

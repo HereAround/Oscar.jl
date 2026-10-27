@@ -186,3 +186,15 @@ end
   JJ = Oscar.ToricIdealSheafFromCoxRingIdeal(X, I)
   @test II == JJ
 end
+
+# Exercise Cox-ring ideal sheaves directly from core toric geometry.
+@testset "Cox-ring ideal sheaves on toric varieties" begin
+  X = projective_space(NormalToricVariety, 2)
+  x, y, z = gens(cox_ring(X))
+  I = ideal(cox_ring(X), [x^2 - y*z])
+  II = ideal_sheaf(X, I)
+  @test II isa Oscar.ToricIdealSheafFromCoxRingIdeal
+  @test Oscar.ideal_in_cox_ring(II) === I
+  @test length(affine_charts(X)) == 3
+  @test all(!isone(II(U)) for U in affine_charts(X))
+end

@@ -189,8 +189,8 @@ function chern_class(
   # If thus far, no non-trivial Chern classes have been computed for this toric variety, add an "empty" vector and catch degenerate cases
   if !has_attribute(v, :chern_classes)
     cs = Dict{Int64,CohomologyClass}()
-    cs[0] = cohomology_class(v, one(cohomology_ring(v; completeness_check)))
-    cs[1] = cohomology_class(v, sum(gens(cohomology_ring(v; completeness_check))))
+    cs[0] = cohomology_class(v, one(cohomology_ring(v; completeness_check)); completeness_check)
+    cs[1] = cohomology_class(v, sum(gens(cohomology_ring(v; completeness_check))); completeness_check)
     set_attribute!(v, :chern_classes, cs)
     if k == 0
       return cs[0]
@@ -237,7 +237,7 @@ function chern_class(
     push_term!(my_builder, one(QQ), exps)
   end
   desired_class = CohomologyClass(
-    v, cohomology_ring(v; completeness_check)(finish(my_builder)), true
+    v, cohomology_ring(v; completeness_check)(finish(my_builder)), completeness_check
   )
   cs[k] = desired_class
   set_attribute!(v, :chern_classes, cs)

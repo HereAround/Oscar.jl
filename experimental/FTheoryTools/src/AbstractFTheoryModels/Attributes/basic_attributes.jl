@@ -155,6 +155,9 @@ function toric_hypersurface(
       _check_toric_presentation(Y; check_codimension, check_smoothness)
       return Y
     end
+    # An already cached presentation became stale because the equation or
+    # ambient variety changed. Its numerical invariants cannot be reused.
+    set_attribute!(m, :_euler_intersection_theory_valid, false)
   end
   Y = toric_hypersurface(X, f; check_codimension, check_smoothness)
   set_attribute!(m, :_toric_hypersurface_presentation, Y)

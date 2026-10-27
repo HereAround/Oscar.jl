@@ -27,6 +27,7 @@ const COMMON_FIELDS = [
   :dual_graph,
   :estimated_number_of_triangulations,
   :euler_characteristic,
+  :_euler_intersection_theory_valid,
   :exceptional_classes,
   :exceptional_divisor_indices,
   :g4_flux_tuple_list,

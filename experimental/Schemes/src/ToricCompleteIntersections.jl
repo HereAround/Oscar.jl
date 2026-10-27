@@ -172,3 +172,123 @@ Base.show(io::IO, ::ToricHypersurface) =
 Base.show(io::IO, Y::ToricCompleteIntersection) =
   print(io, "Complete-intersection presentation with ",
         length(defining_equations(Y)), " equations in a normal toric variety")
+
+
+function _check_toric_euler_ambient(
+  X::NormalToricVariety, classes::AbstractVector{ToricDivisorClass};
+  completeness_check::Bool=true,
+)
+  @req is_smooth(X) "Intersection theory requires a smooth ambient toric variety"
+  if completeness_check
+    @req is_complete(X) "Intersection theory requires a complete ambient toric variety"
+  end
+  @req 1 <= length(classes) <= dim(X) "Provide between one and dim(X) divisor classes"
+  @req all(D -> toric_variety(D) === X, classes) "Divisor classes must belong to the ambient toric variety"
+  return nothing
+end
+
+function _check_toric_euler_presentation(
+  Y::AbsToricCompleteIntersection;
+  completeness_check::Bool=true, check_smoothness::Bool=false,
+  check_codimension::Bool=false,
+)
+  _check_toric_euler_ambient(toric_variety(Y), defining_divisor_classes(Y); completeness_check)
+  _check_toric_presentation(Y; check_smoothness, check_codimension)
+  P = _toric_presentation(Y)
+  # A known failure is never silently overridden by an unchecked Euler call.
+  @req !has_attribute(P, :is_smooth) ||
+       get_attribute(P, :is_smooth) "The hypersurface is known to be singular"
+  if has_attribute(P, :covered_scheme)
+    S = get_attribute(P, :covered_scheme)::AbsCoveredScheme
+    @req !has_attribute(S, :is_smooth) ||
+         get_attribute(S, :is_smooth) "The hypersurface is known to be singular"
+  end
+  @req !has_attribute(P, :has_expected_codimension) ||
+       get_attribute(P, :has_expected_codimension) "The equations are known not to have the expected codimension"
+  return nothing
+end
+
+# Formal adjunction, truncated at the desired degree in the Chow ring.
+function _toric_ci_chern_polynomial(
+  X::NormalToricVariety, classes::AbstractVector{ToricDivisorClass}, k::Int;
+  completeness_check::Bool=true,
+)
+  cs = [polynomial(chern_class(X, j; completeness_check)) for j in 0:k]
+  for D in classes
+    d = polynomial(cohomology_class(D; completeness_check))
+    for j in 1:k
+      cs[j + 1] -= d * cs[j]
+    end
+  end
+  return cs[k + 1]
+end
+
+@doc raw"""
+    chern_class(Y::AbsToricCompleteIntersection, k::Int;
+                completeness_check=true, check_smoothness=false, check_codimension=false)
+
+Return an ambient cohomology class restricting to the k-th Chern class of a
+smooth complete intersection. The ambient toric variety must be smooth and
+complete, and the equations must form a regular sequence. Unless explicitly
+checked, hypersurface smoothness and expected codimension are assumptions.
+"""
+function chern_class(
+  Y::AbsToricCompleteIntersection, k::Int;
+  completeness_check::Bool=true, check_smoothness::Bool=false,
+  check_codimension::Bool=false,
+)
+  X = toric_variety(Y)
+  classes = defining_divisor_classes(Y)
+  @req 0 <= k <= dim(X) - length(classes) "Chern class index is outside the expected dimension"
+  _check_toric_euler_presentation(Y; completeness_check, check_smoothness, check_codimension)
+  p = _toric_ci_chern_polynomial(X, classes, k; completeness_check)
+  return cohomology_class(X, p; completeness_check)
+end
+
+@doc raw"""
+    euler_characteristic(X::NormalToricVariety, classes::AbstractVector{ToricDivisorClass};
+                         completeness_check=true, algorithm=:intersection_theory)
+
+Compute the Euler characteristic of a smooth member of the expected
+complete-intersection codimension with the given divisor classes in a smooth,
+complete toric ambient variety. No equations are supplied or checked.
+This is separate from the existing Euler characteristic of the toric variety X.
+"""
+function euler_characteristic(
+  X::NormalToricVariety, classes::AbstractVector{ToricDivisorClass};
+  algorithm::Symbol=:intersection_theory, completeness_check::Bool=true,
+)
+  @req algorithm == :intersection_theory "Unknown Euler characteristic algorithm"
+  _check_toric_euler_ambient(X, classes; completeness_check)
+  k = dim(X) - length(classes)
+  p = _toric_ci_chern_polynomial(X, classes, k; completeness_check)
+  for D in classes
+    p *= polynomial(cohomology_class(D; completeness_check))
+  end
+  value = integrate(cohomology_class(X, p; completeness_check); completeness_check)
+  @req isone(denominator(value)) "The computed Euler characteristic is not integral"
+  return ZZ(value)
+end
+
+@doc raw"""
+    euler_characteristic(Y::AbsToricCompleteIntersection;
+                         algorithm=:intersection_theory, completeness_check=true,
+                         check_smoothness=false, check_codimension=false)
+
+Compute the Euler characteristic of a smooth complete-intersection presentation
+using adjunction and ambient intersection theory. The ambient variety must be
+smooth and complete. Smoothness and regularity of the equations are assumptions
+unless checked. Previously known failures are rejected even when checks are
+disabled. Arbitrary or singular closed subschemes are not supported.
+"""
+function euler_characteristic(
+  Y::AbsToricCompleteIntersection;
+  algorithm::Symbol=:intersection_theory, completeness_check::Bool=true,
+  check_smoothness::Bool=false, check_codimension::Bool=false,
+)
+  @req algorithm == :intersection_theory "Unknown Euler characteristic algorithm"
+  _check_toric_euler_presentation(Y; completeness_check, check_smoothness, check_codimension)
+  return euler_characteristic(
+    toric_variety(Y), defining_divisor_classes(Y); algorithm, completeness_check
+  )
+end

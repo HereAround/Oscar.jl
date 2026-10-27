@@ -166,3 +166,45 @@ end
   @test !is_smooth(singular)
   @test is_smooth(covered_scheme(H))
 end
+
+
+# Check the shared adjunction formula and rejection of known singularities.
+@testset "Euler characteristics of toric complete intersections" begin
+  P2 = projective_space(NormalToricVariety, 2)
+  x, y, z = gens(cox_ring(P2))
+  @test euler_characteristic(P2) == 3
+  line = toric_hypersurface(P2, x)
+  @test euler_characteristic(line) == 2
+  @test euler_characteristic(P2, defining_divisor_classes(line)) == 2
+  cubic = toric_hypersurface(P2, x^3 + y^3 + z^3)
+  @test euler_characteristic(cubic) == 0
+  @test euler_characteristic(cubic; check_codimension=true, check_smoothness=true) == 0
+
+  singular = toric_hypersurface(P2, x*y)
+  @test euler_characteristic(singular) == 2  # smooth-member formula, before verification
+  @test !is_smooth(covered_scheme(singular))
+  @test_throws ArgumentError euler_characteristic(singular)
+  @test_throws ArgumentError euler_characteristic(singular; check_smoothness=true)
+  @test_throws MethodError euler_characteristic(
+    closed_subvariety_of_toric_variety(P2, [x*y])
+  )
+
+  P3 = projective_space(NormalToricVariety, 3)
+  w = gens(cox_ring(P3))
+  K3 = toric_hypersurface(P3, sum(v^4 for v in w); check_codimension=false)
+  @test euler_characteristic(K3) == 24
+  @test euler_characteristic(P3, defining_divisor_classes(K3)) == 24
+  @test_throws ArgumentError chern_class(K3, 3)
+  elliptic = toric_complete_intersection(
+    P3, [sum(v^2 for v in w), sum(i*w[i]^2 for i in eachindex(w))];
+    check_codimension=false,
+  )
+  @test euler_characteristic(elliptic) == 0
+
+  P4 = projective_space(NormalToricVariety, 4)
+  quintic = toric_hypersurface(
+    P4, sum(v^5 for v in gens(cox_ring(P4))); check_codimension=false,
+  )
+  @test euler_characteristic(quintic) == -200
+  @test_throws ArgumentError euler_characteristic(quintic; algorithm=:unknown)
+end

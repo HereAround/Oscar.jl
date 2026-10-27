@@ -250,3 +250,23 @@ end
   @test defining_equation(Y) == hypersurface_equation(m)
   @test calabi_yau_hypersurface(m) isa ClosedSubvarietyOfToricVariety
 end
+
+
+# Preserve cached presentation checks and serialized Euler provenance.
+@testset "F-theory Euler provenance and presentation reuse" begin
+  m = deepcopy(h)
+  Y = toric_hypersurface(m; check_codimension=false)
+  @test toric_hypersurface(m; check_codimension=false) === Y
+  set_attribute!(Y.presentation, :is_smooth, false)
+  @test get_attribute(toric_hypersurface(m; check_codimension=false).presentation, :is_smooth) === false
+
+  set_attribute!(m, :euler_characteristic, 0)
+  set_attribute!(m, :_euler_intersection_theory_valid, true)
+  mktempdir() do directory
+    file = joinpath(directory, "euler_provenance.mrdi")
+    save(file, m)
+    loaded = load(file)
+    @test get_attribute(loaded, :euler_characteristic) == 0
+    @test get_attribute(loaded, :_euler_intersection_theory_valid) === true
+  end
+end

@@ -135,10 +135,11 @@ end
 @doc raw"""
     euler_characteristic(m::AbstractFTheoryModel)
 
-If the elliptically fibered n-fold ``Y_n`` underlying the F-theory model in question is given
-as a hypersurface in a toric ambient space, we can compute the Euler characteristic. If this
-assumptions is satisfied, this method returns the Euler characteristic, otherwise it raises an
-error.
+For a smooth hypersurface of the expected codimension in a smooth and complete
+toric ambient variety, compute its Euler characteristic using the shared
+intersection-theory algorithm in any dimension. Smoothness and codimension
+remain assumptions unless explicitly checked. A known failure is always
+rejected, including when a previously computed Euler number is cached.
 
 !!! note "Completeness check"
     The implemented algorithm is guaranteed to work only for toric ambient spaces
@@ -157,21 +158,44 @@ julia> h = euler_characteristic(qsm_model; completeness_check = false)
 378
 ```
 """
-@attr Int function euler_characteristic(
-  m::AbstractFTheoryModel; completeness_check::Bool=true
+function euler_characteristic(
+  m::AbstractFTheoryModel;
+  algorithm::Symbol=:intersection_theory, completeness_check::Bool=true,
+  check_smoothness::Bool=false, check_codimension::Bool=false,
 )
-  @req (m isa WeierstrassModel || m isa GlobalTateModel || m isa HypersurfaceModel) "Euler characteristic of F-theory model supported for Weierstrass, global Tate and hypersurface models only"
-  @req base_space(m) isa NormalToricVariety "Euler characteristic of F-theory model currently supported only for toric base"
-  @req ambient_space(m) isa NormalToricVariety "Euler characteristic of F-theory model currently supported only for toric ambient space"
-
-  # Trigger potential short-cut computation of cohomology ring
-  cohomology_ring(ambient_space(m); completeness_check)
-
-  # Compute the cohomology class corresponding to the hypersurface equation
-  cy = cohomology_class(
-    toric_divisor_class(ambient_space(m), degree(hypersurface_equation(m)))
+  @req algorithm == :intersection_theory "Unknown Euler characteristic algorithm"
+  Y = toric_hypersurface(m; check_codimension=false)
+  # Validating the current presentation is required even when using a cached
+  # or deserialized Euler number. Known failures cannot be ignored.
+  _check_toric_euler_presentation(
+    Y; completeness_check, check_smoothness, check_codimension
   )
+  if has_attribute(m, :_euler_intersection_theory_valid) &&
+     get_attribute(m, :_euler_intersection_theory_valid) &&
+     has_attribute(m, :euler_characteristic)
+    return get_attribute(m, :euler_characteristic)::Int
+  end
+  value = Int(euler_characteristic(Y; algorithm, completeness_check))
+  set_attribute!(m, :euler_characteristic, value)
+  set_attribute!(m, :_euler_intersection_theory_valid, true)
+  return value
+end
 
-  # Compute the Euler characteristic
-  return Int(integrate(chern_class(m, 4; completeness_check) * cy; completeness_check))
+@doc raw"""
+    euler_characteristic(m::CompleteIntersectionModel, equations::AbstractVector;
+                         algorithm=:intersection_theory, completeness_check=true,
+                         check_smoothness=false, check_codimension=false)
+
+Compute the Euler characteristic for a chosen regular-sequence presentation of
+a concrete complete-intersection F-theory model using toric intersection theory.
+"""
+function euler_characteristic(
+  m::CompleteIntersectionModel, equations::AbstractVector;
+  algorithm::Symbol=:intersection_theory, completeness_check::Bool=true,
+  check_smoothness::Bool=false, check_codimension::Bool=false,
+)
+  Y = toric_complete_intersection(m, equations; check_codimension=false)
+  return Int(euler_characteristic(
+    Y; algorithm, completeness_check, check_smoothness, check_codimension
+  ))
 end

@@ -26,3 +26,35 @@
     @test dim(toric_variety(sv1)) == 2
   end
 end
+
+
+# Check that chosen Cox equations yield certified geometric presentations.
+@testset "Toric hypersurface and complete-intersection presentations" begin
+  X = projective_space(NormalToricVariety, 2)
+  x, y, z = gens(cox_ring(X))
+  H = toric_hypersurface(X, x^2 - y*z)
+  @test H isa ToricHypersurface
+  @test has_expected_codimension(H)
+  @test is_smooth(H)
+  @test defining_equation(H) == x^2 - y*z
+  @test defining_divisor_classes(H) == [toric_divisor_class(X, degree(x^2))]
+  @test fundamental_class(H) ==
+    rational_equivalence_class(only(defining_divisor_classes(H)))
+  @test fundamental_class(H) == rational_equivalence_class(H)
+  @test covered_scheme(H) === covered_scheme(H)
+
+  C = toric_complete_intersection(X, [x, y])
+  @test C isa ToricCompleteIntersection
+  @test has_expected_codimension(C)
+  @test dim(C) == 0
+  @test_throws ArgumentError toric_complete_intersection(X, [x, x])
+  @test_throws MethodError ToricCompleteIntersection(
+    X, [x], [toric_divisor_class(X, degree(x^3))]
+  )
+  @test_throws ArgumentError toric_hypersurface(X, x + y^2)
+  @test_throws ArgumentError toric_hypersurface(X, zero(cox_ring(X)))
+
+  singular = toric_hypersurface(X, x*y)
+  @test !is_smooth(singular)
+  @test is_smooth(covered_scheme(H))
+end

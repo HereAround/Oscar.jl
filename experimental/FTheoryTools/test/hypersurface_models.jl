@@ -237,3 +237,16 @@ h5 = literature_model(; arxiv_id="1208.2695", equation="B.5", rng=our_rng)
   @test is_base_space_fully_specified(h5) == false
   @test is_partially_resolved(h5) == false
 end
+
+
+# Check the separate, cache-stable F-theory hypersurface representation.
+@testset "F-theory toric presentation adapters" begin
+  B = projective_space(NormalToricVariety, 2)
+  m = weierstrass_model_over_projective_space(2)
+  Y = toric_hypersurface(m; check_codimension=false)
+  @test Y isa ToricHypersurface
+  @test toric_hypersurface(m; check_codimension=false) === Y
+  @test toric_variety(Y) === ambient_space(m)
+  @test defining_equation(Y) == hypersurface_equation(m)
+  @test calabi_yau_hypersurface(m) isa ClosedSubvarietyOfToricVariety
+end

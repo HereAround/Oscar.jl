@@ -130,6 +130,59 @@ Closed subvariety of a normal toric variety
   return closed_subvariety_of_toric_variety(ambient_space(m), [hypersurface_equation(m)])
 end
 
+
+@doc raw"""
+    toric_hypersurface(m::AbstractFTheoryModel;
+                       check_codimension=true, check_smoothness=false)
+
+Return a cached ToricHypersurface presentation of a concrete Weierstrass, Tate,
+or hypersurface model. The legacy calabi_yau_hypersurface(m) remains unchanged.
+By default, a codimension check is performed and may be expensive; checking
+smoothness is optional. Requested checks run even on a cached presentation.
+"""
+function toric_hypersurface(
+  m::AbstractFTheoryModel;
+  check_codimension::Bool=true, check_smoothness::Bool=false,
+)
+  @req m isa Union{HypersurfaceModel,WeierstrassModel,GlobalTateModel} "A concrete hypersurface model is required"
+  @req base_space(m) isa NormalToricVariety "A concrete toric base is required"
+  X = ambient_space(m)
+  @req X isa NormalToricVariety "A toric ambient space is required"
+  f = hypersurface_equation(m)
+  if has_attribute(m, :_toric_hypersurface_presentation)
+    Y = get_attribute(m, :_toric_hypersurface_presentation)::ToricHypersurface
+    if toric_variety(Y) === X && defining_equation(Y) == f
+      _check_toric_presentation(Y; check_codimension, check_smoothness)
+      return Y
+    end
+  end
+  Y = toric_hypersurface(X, f; check_codimension, check_smoothness)
+  set_attribute!(m, :_toric_hypersurface_presentation, Y)
+  return Y
+end
+
+defining_ideal(m::CompleteIntersectionModel) = m.defining_ideal
+
+@doc raw"""
+    toric_complete_intersection(m::CompleteIntersectionModel, equations::AbstractVector;
+                                check_codimension=true, check_smoothness=false)
+
+Construct a chosen toric complete-intersection presentation from equations
+which generate a concrete model's defining ideal. The equation list is supplied
+explicitly; an arbitrary ideal generating set is not assumed regular.
+"""
+function toric_complete_intersection(
+  m::CompleteIntersectionModel, equations::AbstractVector;
+  check_codimension::Bool=true, check_smoothness::Bool=false,
+)
+  @req base_space(m) isa NormalToricVariety "A concrete toric base is required"
+  X = ambient_space(m)
+  @req X isa NormalToricVariety "A toric ambient space is required"
+  fs = _toric_equations(X, equations)
+  @req ideal(cox_ring(X), fs) == defining_ideal(m) "Equations must generate the stored ideal"
+  return toric_complete_intersection(X, fs; check_codimension, check_smoothness)
+end
+
 ######################################################################################
 ### Attributes for flux families (not exported, rather for serialization overhaul)
 ######################################################################################

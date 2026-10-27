@@ -11,6 +11,7 @@ include("ToricIdealSheaves/auxiliary.jl")
 include("ToricIdealSheaves/constructors.jl")
 include("ToricIdealSheaves/attributes.jl")
 include("ToricIdealSheaves/methods.jl")
+include("ToricCompleteIntersections.jl")
 
 include("ToricDivisors/constructors.jl")
 include("ToricDivisors/attributes.jl")
@@ -78,3 +79,13 @@ Base.@deprecate_binding InheritGlueingData InheritGluingData
 Base.@deprecate_binding LazyProjectiveGlueing LazyProjectiveGluing
 Base.@deprecate_binding ProjectiveGlueing ProjectiveGluing
 Base.@deprecate_binding ProjectiveGlueingData ProjectiveGluingData
+
+export AbsToricCompleteIntersection
+export ToricCompleteIntersection
+export ToricHypersurface
+export toric_complete_intersection
+export toric_hypersurface
+export defining_equations
+export defining_equation
+export defining_divisor_classes
+export has_expected_codimension
